@@ -7,8 +7,6 @@ android {
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 27
-        versionCode 27
-        versionName "2.6.5"
     }
 
     buildTypes {
@@ -25,7 +23,8 @@ android {
 
 dependencies {
     api fileTree(dir: 'libs', include: ['*.jar'])
-    api 'com.android.support:appcompat-v7:27.0.2'
-    api 'com.android.support:design:27.0.2'
+    testCompile 'junit:junit:4.12'
+    api "com.android.support:appcompat-v7:$rootProject.ext.android_support_version"
+    api "com.android.support:design:$rootProject.ext.android_support_version"
     api 'com.squareup.okhttp3:okhttp:3.9.1'
 }
