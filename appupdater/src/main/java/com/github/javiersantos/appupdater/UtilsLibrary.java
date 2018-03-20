@@ -15,6 +15,7 @@ import com.github.javiersantos.appupdater.enums.UpdateFrom;
 import com.github.javiersantos.appupdater.objects.GitHub;
 import com.github.javiersantos.appupdater.objects.Update;
 import com.github.javiersantos.appupdater.objects.Version;
+import com.github.javiersantos.appupdater.services.AppUpdateService;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -64,6 +65,7 @@ class UtilsLibrary {
     }
 
     static Boolean isUpdateAvailable(Update installedVersion, Update latestVersion) {
+        /*
         Boolean res = false;
 
         if (latestVersion.getLatestVersionCode() != null && latestVersion.getLatestVersionCode() > 0) {
@@ -77,6 +79,8 @@ class UtilsLibrary {
         }
 
         return res;
+        */
+        return true;
     }
 
     static Boolean isStringAVersion(String version) {
@@ -281,7 +285,8 @@ class UtilsLibrary {
         return intent;
     }
 
-    static void goToUpdate(Context context, UpdateFrom updateFrom, URL url) {
+    static void goToUpdate(Context context, UpdateFrom updateFrom, URL url, int iconResId) {
+        /*
         Intent intent = intentToUpdate(context, updateFrom, url);
 
         if (updateFrom.equals(UpdateFrom.GOOGLE_PLAY)) {
@@ -294,6 +299,15 @@ class UtilsLibrary {
         } else {
             context.startActivity(intent);
         }
+        */
+        Intent intent = new Intent(context, AppUpdateService.class);
+        intent.putExtra(AppUpdateService.INTENT_EXTRA_FILE_URL, url.toString());
+        intent.putExtra(AppUpdateService.INTENT_EXTRA_ICON_RES_ID, iconResId);
+        context.startService(intent);
+    }
+
+    static void goToUpdate(Context context, UpdateFrom updateFrom, URL url) {
+        goToUpdate(context, updateFrom, url, R.drawable.ic_stat_name);
     }
 
     static Boolean isAbleToShow(Integer successfulChecks, Integer showEvery) {
