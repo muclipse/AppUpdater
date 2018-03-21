@@ -12,7 +12,6 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
-import android.util.Log;
 import android.widget.Toast;
 
 import com.github.javiersantos.appupdater.R;
@@ -22,6 +21,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Objects;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -38,23 +38,18 @@ public class AppUpdateService extends Service {
 
     public static final String ACTION_START = "AppUpdater.AppUpdateService.action.start";
     public static final String ACTION_RESTART = "AppUpdater.AppUpdateService.action.restart";
-
-    public static String INTENT_EXTRA_FILE_URL = "fileURL";
-    public static String INTENT_EXTRA_ICON_RES_ID = "iconResId";
-
     private static final String TAG = "AppUpdateService";
     private static final String DOWNLOAD_NOTIFICATION_CHANNEL_ID = "App Download Notification";
     private static final String INSTALL_NOTIFICATION_CHANNEL_ID = "App Install Notification";
     private static final String FAILURE_NOTIFICATION_CAHANNEL_ID = "App Download Failure Notification";
     private static final String PARAM_VERSION = "version";
     private static final String FILE_PATH_PREFIX = "file://";
-
     private static final int NOTIFICATION_DOWNLOAD_ID = 0;
     private static final int NOTIFICATION_INSTALL_ID = 1;
     private static final int NOTIFICATION_FAILURE_ID = 2;
     private static final int BUFFER_SIZE = 2048;
-
-
+    public static String INTENT_EXTRA_FILE_URL = "fileURL";
+    public static String INTENT_EXTRA_ICON_RES_ID = "iconResId";
     private NotificationManager notificationManager;
     private OkHttpClient client;
     private String fileUrl;
@@ -68,53 +63,54 @@ public class AppUpdateService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent.getAction().equals(ACTION_START)) {
+        if (Objects.equals(intent.getAction(), ACTION_START)) {
             notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             client = new OkHttpClient();
             fileUrl = intent.getStringExtra(INTENT_EXTRA_FILE_URL);
             iconResId = intent.getIntExtra(INTENT_EXTRA_ICON_RES_ID, R.drawable.ic_stat_name);
-        }
-        final Handler mainHandler = new Handler(getMainLooper());
-        Request request = new Request.Builder().url(fileUrl).build();
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getApplicationContext(), R.string.appupdater_download_failure_description_toast, Toast.LENGTH_SHORT).show();
+
+            final Handler mainHandler = new Handler(getMainLooper());
+            Request request = new Request.Builder().url(fileUrl).build();
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), R.string.appupdater_download_failure_description_toast, Toast.LENGTH_SHORT).show();
+                            NotificationCompat.Builder failureNotiBuilder = getFailureNotificationBuilder();
+                            notificationManager.notify(TAG, NOTIFICATION_FAILURE_ID, failureNotiBuilder.build());
+                        }
+                    });
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) {
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), R.string.appupdater_download_description_start_toast, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    NotificationCompat.Builder downloadNotificationBuilder = getDownloadNotificationBuilder();
+                    notificationManager.notify(TAG, NOTIFICATION_DOWNLOAD_ID, downloadNotificationBuilder.build());
+                    File directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    String appName = response.request().url().queryParameter(PARAM_VERSION);
+                    String filePath = String.format("%s/%s", directory.getAbsolutePath(), appName);
+                    File fileToBeDownloaded = new File(filePath);
+                    try {
+                        downloadFile(response, fileToBeDownloaded, downloadNotificationBuilder);
+                        notificationManager.cancel(TAG, NOTIFICATION_DOWNLOAD_ID);
+                        NotificationCompat.Builder installNotificationBuilder = getInstallNotificationBuilder(filePath);
+                        notificationManager.notify(TAG, NOTIFICATION_INSTALL_ID, installNotificationBuilder.build());
+                    } catch (IOException e) {
+                        notificationManager.cancel(TAG, NOTIFICATION_DOWNLOAD_ID);
                         NotificationCompat.Builder failureNotiBuilder = getFailureNotificationBuilder();
                         notificationManager.notify(TAG, NOTIFICATION_FAILURE_ID, failureNotiBuilder.build());
                     }
-                });
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) {
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getApplicationContext(), R.string.appupdater_download_description_start_toast, Toast.LENGTH_SHORT).show();
-                    }
-                });
-                NotificationCompat.Builder downloadNotificationBuilder = getDownloadNotificationBuilder();
-                notificationManager.notify(TAG, NOTIFICATION_DOWNLOAD_ID, downloadNotificationBuilder.build());
-                File directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                String appName = response.request().url().queryParameter(PARAM_VERSION);
-                String filePath = String.format("%s/%s", directory.getAbsolutePath(), appName);
-                File fileToBeDownloaded = new File(filePath);
-                try {
-                    downloadFile(response, fileToBeDownloaded, downloadNotificationBuilder);
-                    notificationManager.cancel(TAG, NOTIFICATION_DOWNLOAD_ID);
-                    NotificationCompat.Builder installNotificationBuilder = getInstallNotificationBuilder(filePath);
-                    notificationManager.notify(TAG, NOTIFICATION_INSTALL_ID, installNotificationBuilder.build());
-                } catch (IOException e) {
-                    notificationManager.cancel(TAG, NOTIFICATION_DOWNLOAD_ID);
-                    NotificationCompat.Builder failureNotiBuilder = getFailureNotificationBuilder();
-                    notificationManager.notify(TAG, NOTIFICATION_FAILURE_ID, failureNotiBuilder.build());
                 }
-            }
-        });
+            });
+        }
         return START_NOT_STICKY;
     }
 
@@ -145,7 +141,10 @@ public class AppUpdateService extends Service {
 
     private NotificationCompat.Builder getFailureNotificationBuilder() {
         Context context = getApplicationContext();
-        Intent intent = new Intent(this, AppUpdateService.class).setAction(ACTION_RESTART);
+        Intent intent = new Intent(this, AppUpdateService.class).setAction(ACTION_START)
+                .putExtra(INTENT_EXTRA_FILE_URL, fileUrl)
+                .putExtra(INTENT_EXTRA_ICON_RES_ID, iconResId);
+
         PendingIntent pending = PendingIntent.getService(context, 1, intent, PendingIntent.FLAG_CANCEL_CURRENT);
         return new NotificationCompat.Builder(this, FAILURE_NOTIFICATION_CAHANNEL_ID)
                 .setSmallIcon(iconResId)
