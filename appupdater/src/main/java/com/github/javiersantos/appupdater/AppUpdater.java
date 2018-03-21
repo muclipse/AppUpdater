@@ -339,7 +339,7 @@ public class AppUpdater implements IAppUpdater {
                     if (UtilsLibrary.isAbleToShow(successfulChecks, showEvery)) {
                         switch (display) {
                             case DIALOG:
-                                final DialogInterface.OnClickListener updateClickListener = btnUpdateClickListener == null ? new UpdateClickListener(context, updateFrom, update.getUrlToDownload()) : btnUpdateClickListener;
+                                final DialogInterface.OnClickListener updateClickListener = btnUpdateClickListener == null ? new UpdateClickListener(context, updateFrom, update.getUrlToDownload(), iconResId) : btnUpdateClickListener;
                                 final DialogInterface.OnClickListener disableClickListener = btnDisableClickListener == null ? new DisableClickListener(context) : btnDisableClickListener;
 
                                 alertDialog = UtilsDisplay.showUpdateAvailableDialog(context, titleUpdate, getDescriptionUpdate(context, update, Display.DIALOG), btnDismiss, btnUpdate, btnDisable, updateClickListener, btnDismissClickListener, disableClickListener);

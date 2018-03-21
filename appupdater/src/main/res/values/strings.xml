@@ -11,5 +11,14 @@
     <string name="appupdater_btn_dismiss">Dismiss</string>
     <string name="appupdater_channel_name">Update notifications</string>
 
+    <string name="appupdater_download_description_start_toast">Starting downloading the new version of the app.</string>
+    <string name="appupdater_download_failure_description_toast">Download failed. Please check the internet connection.</string>
+    <string name="appupdater_download_notification_title">New Version</string>
+    <string name="appupdater_download_notification_content">New version is downloading.</string>
+    <string name="appupdater_install_notification_title">Completed download</string>
+    <string name="appupdater_install_notification_content">Please touch to install a new version of app.</string>
+    <string name="appupdater_download_failure_notification_title">Download Failed</string>
+    <string name="appupdater_download_failure_notification_content">App download failed. Touch to try again.</string>
+
     <string name="appupdater_channel" translatable="false">appupdater_channel_01</string>
 </resources>
