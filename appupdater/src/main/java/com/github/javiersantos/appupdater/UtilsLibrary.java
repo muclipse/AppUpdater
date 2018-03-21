@@ -300,6 +300,7 @@ class UtilsLibrary {
         Intent intent = new Intent(context, AppUpdateService.class);
         intent.putExtra(AppUpdateService.INTENT_EXTRA_FILE_URL, url.toString());
         intent.putExtra(AppUpdateService.INTENT_EXTRA_ICON_RES_ID, iconResId);
+        intent.setAction(AppUpdateService.ACTION_START);
         context.startService(intent);
     }
 
