@@ -65,7 +65,6 @@ class UtilsLibrary {
     }
 
     static Boolean isUpdateAvailable(Update installedVersion, Update latestVersion) {
-        /*
         Boolean res = false;
 
         if (latestVersion.getLatestVersionCode() != null && latestVersion.getLatestVersionCode() > 0) {
@@ -79,8 +78,6 @@ class UtilsLibrary {
         }
 
         return res;
-        */
-        return true;
     }
 
     static Boolean isStringAVersion(String version) {
