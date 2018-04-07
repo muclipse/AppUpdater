@@ -23,8 +23,8 @@ android {
 
 dependencies {
     api fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.12'
     api "com.android.support:appcompat-v7:$rootProject.ext.android_support_version"
     api "com.android.support:design:$rootProject.ext.android_support_version"
-    api 'com.squareup.okhttp3:okhttp:3.9.1'
+    api 'com.squareup.okhttp3:okhttp:3.10.0'
 }
