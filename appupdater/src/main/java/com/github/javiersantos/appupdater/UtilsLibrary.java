@@ -282,7 +282,7 @@ class UtilsLibrary {
         return intent;
     }
 
-    static void goToUpdate(Context context, UpdateFrom updateFrom, URL url, int iconResId) {
+    static void goToUpdate(Context context, UpdateFrom updateFrom, URL url, String appId, int iconResId) {
         /*
         Intent intent = intentToUpdate(context, updateFrom, url);
 
@@ -298,6 +298,7 @@ class UtilsLibrary {
         }
         */
         Intent intent = new Intent(context, AppUpdateService.class);
+        intent.putExtra(AppUpdateService.INTENT_EXTRA_APP_ID, appId);
         intent.putExtra(AppUpdateService.INTENT_EXTRA_FILE_URL, url.toString());
         intent.putExtra(AppUpdateService.INTENT_EXTRA_ICON_RES_ID, iconResId);
         intent.setAction(AppUpdateService.ACTION_START);
@@ -305,7 +306,7 @@ class UtilsLibrary {
     }
 
     static void goToUpdate(Context context, UpdateFrom updateFrom, URL url) {
-        goToUpdate(context, updateFrom, url, R.drawable.ic_stat_name);
+        goToUpdate(context, updateFrom, url, "", R.drawable.ic_stat_name);
     }
 
     static Boolean isAbleToShow(Integer successfulChecks, Integer showEvery) {

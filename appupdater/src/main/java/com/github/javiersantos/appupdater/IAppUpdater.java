@@ -347,6 +347,14 @@ public interface IAppUpdater {
     AppUpdater setButtonDoNotShowAgainClickListener(DialogInterface.OnClickListener clickListener);
 
     /**
+     * Sets the app id for file provider <br/>
+     *
+     * @param appId The id of the application
+     * @return this
+     */
+    AppUpdater setAppId(String appId);
+
+    /**
      * Sets the resource identifier for the small notification icon
      *
      * @param iconRes The id of the drawable item

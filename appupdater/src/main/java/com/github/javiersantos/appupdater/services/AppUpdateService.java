@@ -1,17 +1,21 @@
 package com.github.javiersantos.appupdater.services;
 
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.FileProvider;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.github.javiersantos.appupdater.R;
@@ -41,13 +45,14 @@ public class AppUpdateService extends Service {
     private static final String TAG = "AppUpdateService";
     private static final String DOWNLOAD_NOTIFICATION_CHANNEL_ID = "App Download Notification";
     private static final String INSTALL_NOTIFICATION_CHANNEL_ID = "App Install Notification";
-    private static final String FAILURE_NOTIFICATION_CAHANNEL_ID = "App Download Failure Notification";
+    private static final String FAILURE_NOTIFICATION_CHANNEL_ID = "App Download Failure Notification";
     private static final String PARAM_VERSION = "version";
     private static final String FILE_PATH_PREFIX = "file://";
     private static final int NOTIFICATION_DOWNLOAD_ID = 0;
     private static final int NOTIFICATION_INSTALL_ID = 1;
     private static final int NOTIFICATION_FAILURE_ID = 2;
     private static final int BUFFER_SIZE = 2048;
+    public static String INTENT_EXTRA_APP_ID = "appId";
     public static String INTENT_EXTRA_FILE_URL = "fileURL";
     public static String INTENT_EXTRA_ICON_RES_ID = "iconResId";
     private NotificationManager notificationManager;
@@ -65,9 +70,29 @@ public class AppUpdateService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (Objects.equals(intent.getAction(), ACTION_START)) {
             notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationChannel downloadChannel = new NotificationChannel(DOWNLOAD_NOTIFICATION_CHANNEL_ID,
+                        "App Download Channel",
+                        NotificationManager.IMPORTANCE_DEFAULT);
+
+                NotificationChannel installChannel = new NotificationChannel(INSTALL_NOTIFICATION_CHANNEL_ID,
+                        "App Install Channel",
+                        NotificationManager.IMPORTANCE_DEFAULT);
+
+                NotificationChannel failureChannel = new NotificationChannel(FAILURE_NOTIFICATION_CHANNEL_ID,
+                        "App Download Failure Channel",
+                        NotificationManager.IMPORTANCE_DEFAULT);
+
+                notificationManager.createNotificationChannel(downloadChannel);
+                notificationManager.createNotificationChannel(installChannel);
+                notificationManager.createNotificationChannel(failureChannel);
+            }
+
             client = new OkHttpClient();
             fileUrl = intent.getStringExtra(INTENT_EXTRA_FILE_URL);
             iconResId = intent.getIntExtra(INTENT_EXTRA_ICON_RES_ID, R.drawable.ic_stat_name);
+
+            final String appId = intent.getStringExtra(INTENT_EXTRA_APP_ID);
 
             final Handler mainHandler = new Handler(getMainLooper());
             Request request = new Request.Builder().url(fileUrl).build();
@@ -96,17 +121,19 @@ public class AppUpdateService extends Service {
                     notificationManager.notify(TAG, NOTIFICATION_DOWNLOAD_ID, downloadNotificationBuilder.build());
                     File directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
                     String appName = response.request().url().queryParameter(PARAM_VERSION);
-                    String filePath = String.format("%s/%s", directory.getAbsolutePath(), appName);
+                    String filePath = String.format("%s/%s", directory.getAbsolutePath(), appName) + ".apk";
                     File fileToBeDownloaded = new File(filePath);
+                    Log.i(TAG, "filePath : " + filePath);
                     try {
                         downloadFile(response, fileToBeDownloaded, downloadNotificationBuilder);
                         notificationManager.cancel(TAG, NOTIFICATION_DOWNLOAD_ID);
-                        NotificationCompat.Builder installNotificationBuilder = getInstallNotificationBuilder(filePath);
+                        NotificationCompat.Builder installNotificationBuilder = getInstallNotificationBuilder(appId, fileToBeDownloaded);
                         notificationManager.notify(TAG, NOTIFICATION_INSTALL_ID, installNotificationBuilder.build());
                     } catch (IOException e) {
+                        Log.i(TAG, "Exception : " + e.getMessage());
                         notificationManager.cancel(TAG, NOTIFICATION_DOWNLOAD_ID);
-                        NotificationCompat.Builder failureNotiBuilder = getFailureNotificationBuilder();
-                        notificationManager.notify(TAG, NOTIFICATION_FAILURE_ID, failureNotiBuilder.build());
+                        NotificationCompat.Builder failureNotificationBuilder = getFailureNotificationBuilder();
+                        notificationManager.notify(TAG, NOTIFICATION_FAILURE_ID, failureNotificationBuilder.build());
                     }
                 }
             });
@@ -125,10 +152,18 @@ public class AppUpdateService extends Service {
                 .setProgress(100, 0, true);
     }
 
-    private NotificationCompat.Builder getInstallNotificationBuilder(String path) {
+    private NotificationCompat.Builder getInstallNotificationBuilder(String appId, File file) {
         Context context = getApplicationContext();
-        Intent intent = new Intent(Intent.ACTION_VIEW)
-                .setDataAndType(Uri.parse(FILE_PATH_PREFIX + path), "application/vnd.android.package-archive");
+        Intent intent;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            Uri data = FileProvider.getUriForFile(context,  appId + ".provider", file);
+            intent = new Intent(Intent.ACTION_INSTALL_PACKAGE)
+                    .setData(data)
+                    .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        } else {
+            intent = new Intent(Intent.ACTION_VIEW)
+                    .setDataAndType(Uri.fromFile(file), "application/vnd.android.package-archive");
+        }
         PendingIntent pending = PendingIntent.getActivity(context, 1, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         return new NotificationCompat.Builder(this, INSTALL_NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(iconResId)
@@ -146,7 +181,7 @@ public class AppUpdateService extends Service {
                 .putExtra(INTENT_EXTRA_ICON_RES_ID, iconResId);
 
         PendingIntent pending = PendingIntent.getService(context, 1, intent, PendingIntent.FLAG_CANCEL_CURRENT);
-        return new NotificationCompat.Builder(this, FAILURE_NOTIFICATION_CAHANNEL_ID)
+        return new NotificationCompat.Builder(this, FAILURE_NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(iconResId)
                 .setAutoCancel(true)
                 .setContentTitle(context.getResources().getString(R.string.appupdater_download_failure_notification_title))
@@ -176,6 +211,8 @@ public class AppUpdateService extends Service {
                 notificationManager.notify(TAG, NOTIFICATION_DOWNLOAD_ID, builder.build());
             }
         }
+
+        Log.i(TAG, fileToBeDownloaded.getAbsolutePath());
         os.flush();
         os.close();
         is.close();
