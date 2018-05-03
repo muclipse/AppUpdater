@@ -120,10 +120,9 @@ public class AppUpdateService extends Service {
                     NotificationCompat.Builder downloadNotificationBuilder = getDownloadNotificationBuilder();
                     notificationManager.notify(TAG, NOTIFICATION_DOWNLOAD_ID, downloadNotificationBuilder.build());
                     File directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                    String appName = response.request().url().queryParameter(PARAM_VERSION);
-                    String filePath = String.format("%s/%s", directory.getAbsolutePath(), appName) + ".apk";
+                    String appName = response.request().url().queryParameter(PARAM_VERSION) + ".apk";
+                    String filePath = String.format("%s/%s", directory.getAbsolutePath(), appName);
                     File fileToBeDownloaded = new File(filePath);
-                    Log.i(TAG, "filePath : " + filePath);
                     try {
                         downloadFile(response, fileToBeDownloaded, downloadNotificationBuilder);
                         notificationManager.cancel(TAG, NOTIFICATION_DOWNLOAD_ID);
@@ -212,7 +211,6 @@ public class AppUpdateService extends Service {
             }
         }
 
-        Log.i(TAG, fileToBeDownloaded.getAbsolutePath());
         os.flush();
         os.close();
         is.close();
