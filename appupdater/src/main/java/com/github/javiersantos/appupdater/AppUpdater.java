@@ -19,6 +19,8 @@ import com.github.javiersantos.appupdater.objects.GitHub;
 import com.github.javiersantos.appupdater.objects.Update;
 
 public class AppUpdater implements IAppUpdater {
+
+    public static final String PREF_CHECK_UPDATES = "pref_check_updates";
     private Context context;
     private LibraryPreferences libraryPreferences;
     private Display display;
@@ -30,6 +32,7 @@ public class AppUpdater implements IAppUpdater {
     private Boolean showAppUpdated;
     private String titleUpdate, descriptionUpdate, btnDismiss, btnUpdate, btnDisable; // Update available
     private String titleNoUpdate, descriptionNoUpdate; // Update not available
+    private String appId;
     private int iconResId;
     private UtilsAsync.LatestAppVersion latestAppVersion;
     private DialogInterface.OnClickListener btnUpdateClickListener, btnDismissClickListener, btnDisableClickListener;
@@ -46,6 +49,7 @@ public class AppUpdater implements IAppUpdater {
         this.duration = Duration.NORMAL;
         this.showEvery = 1;
         this.showAppUpdated = false;
+        this.appId = "";
         this.iconResId = R.drawable.ic_stat_name;
 
         // Dialog
@@ -307,6 +311,12 @@ public class AppUpdater implements IAppUpdater {
     }
 
     @Override
+    public AppUpdater setAppId(String appId) {
+        this.appId = appId;
+        return this;
+    }
+
+    @Override
     public AppUpdater setIcon(@DrawableRes int iconRes) {
         this.iconResId = iconRes;
         return this;
@@ -339,7 +349,7 @@ public class AppUpdater implements IAppUpdater {
                     if (UtilsLibrary.isAbleToShow(successfulChecks, showEvery)) {
                         switch (display) {
                             case DIALOG:
-                                final DialogInterface.OnClickListener updateClickListener = btnUpdateClickListener == null ? new UpdateClickListener(context, updateFrom, update.getUrlToDownload(), iconResId) : btnUpdateClickListener;
+                                final DialogInterface.OnClickListener updateClickListener = btnUpdateClickListener == null ? new UpdateClickListener(context, updateFrom, update.getUrlToDownload(), appId, iconResId) : btnUpdateClickListener;
                                 final DialogInterface.OnClickListener disableClickListener = btnDisableClickListener == null ? new DisableClickListener(context) : btnDisableClickListener;
 
                                 alertDialog = UtilsDisplay.showUpdateAvailableDialog(context, titleUpdate, getDescriptionUpdate(context, update, Display.DIALOG), btnDismiss, btnUpdate, btnDisable, updateClickListener, btnDismissClickListener, disableClickListener);
