@@ -26,7 +26,7 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     api "com.android.support:appcompat-v7:$rootProject.ext.android_support_version"
     api "com.android.support:design:$rootProject.ext.android_support_version"
-    api 'com.squareup.okhttp3:okhttp:3.10.0'
+    api "com.squareup.okhttp3:okhttp:$rootProject.ext.okhttp_version"
     implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.5@aar'
-    implementation 'io.reactivex.rxjava2:rxjava:2.1.11'
+    implementation "io.reactivex.rxjava2:rxjava:$rootProject.ext.rxjava_version"
 }
